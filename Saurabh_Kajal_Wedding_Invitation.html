@@ -330,15 +330,6 @@
         Please grace the occasion with your presence and bless the newlyweds.
       </p>
 
-      <div class="rsvp-cta-wrap rsvp-reveal">
-        <a class="rsvp-btn" id="rsvpBtn"
-           href="https://wa.me/919690070410?text=We%20will%20be%20happy%20to%20join%20the%20celebration."
-           target="_blank" rel="noreferrer">
-          <span class="rsvp-btn-inner" id="rsvpBtnText">Yes, I'll be there</span>
-        </a>
-        <p class="rsvp-helper" id="rsvpHelper">You'll be redirected to WhatsApp to confirm your attendance.</p>
-      </div>
-
       <div class="rsvp-std rsvp-reveal">
         <p class="rsvp-std-heading">Save the Date</p>
         <div class="rsvp-std-btns">
@@ -627,6 +618,39 @@ document.addEventListener('click', function(e) {
   .custom-route-note{width:min(850px,90%);margin:24px auto 0;padding:18px 22px;text-align:center;color:#f8edda;background:rgba(62,15,19,.88);border:1px solid #c69a55;box-shadow:0 8px 24px rgba(0,0,0,.16);font-family:"EB Garamond",serif;font-size:17px;line-height:1.45}
   .custom-route-note strong{display:block;color:#e5c17e;font-family:"Cinzel",serif;font-size:12px;letter-spacing:.13em;text-transform:uppercase;margin-bottom:5px}
   @media(max-width:800px){.custom-events-wrap{grid-template-columns:1fr;max-width:480px;gap:20px}.custom-day-card{border-radius:46% 46% 12px 12px / 10% 10% 12px 12px;padding:34px 24px 22px}.custom-day-title{margin-bottom:12px}}
+  /* Scroll-driven entrance for the event cards. Where the browser supports
+     view() timelines the animation progress is tied directly to scroll
+     position; elsewhere an IntersectionObserver fallback (below the events
+     script) adds .is-in and the cards transition in instead. */
+  @keyframes customCardIn{
+    from{opacity:0;transform:translateY(70px) scale(.93);filter:blur(7px)}
+    to{opacity:1;transform:none;filter:blur(0)}
+  }
+  @keyframes customRouteIn{
+    from{opacity:0;transform:translateY(34px)}
+    to{opacity:1;transform:none}
+  }
+  .custom-events-wrap{perspective:1400px}
+  .custom-day-card{transform-origin:50% 100%;will-change:transform,opacity,filter}
+  /* overflow:hidden on .events-section would make the section itself the nearest
+     scroll container, freezing a view() timeline. overflow:clip still clips the
+     decorative artwork but does not create a scroll container, so the cards
+     track the page scroll instead. */
+  .events-section{overflow:hidden;overflow:clip}
+  @media(prefers-reduced-motion:no-preference){
+    @supports(animation-timeline:view()){
+      .custom-day-card{animation:customCardIn linear both;animation-timeline:view();animation-range:entry 2% entry 58%}
+      .custom-day-card:nth-child(2){animation-range:entry 10% entry 66%}
+      .custom-day-card:nth-child(3){animation-range:entry 18% entry 74%}
+      .custom-route-note{animation:customRouteIn linear both;animation-timeline:view();animation-range:entry 0% entry 70%}
+    }
+    @supports not (animation-timeline:view()){
+      .custom-day-card,.custom-route-note{opacity:0;transform:translateY(46px) scale(.96)}
+      .custom-day-card.is-in,.custom-route-note.is-in{opacity:1;transform:none;transition:opacity .9s var(--ease),transform 1s var(--ease)}
+      .custom-day-card.is-in:nth-child(2){transition-delay:.12s}
+      .custom-day-card.is-in:nth-child(3){transition-delay:.24s}
+    }
+  }
 </style>
 <script id="saurabh-kajal-events">
 (function(){
@@ -678,6 +702,26 @@ document.addEventListener('click', function(e) {
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",render,{once:true});
   else render();
+})();
+</script>
+
+<script id="saurabh-kajal-event-reveal">
+/* Fallback reveal for the event cards when scroll-driven (view()) timelines
+   are unavailable. Browsers that support them animate via CSS directly. */
+(function(){
+  function init(){
+    var nodes=document.querySelectorAll("#eventsList .custom-day-card, #eventsList .custom-route-note");
+    if(!nodes.length || !("IntersectionObserver" in window)) return;
+    var reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var scrollDriven=!!(window.CSS && CSS.supports && CSS.supports("animation-timeline: view()"));
+    if(reduce || scrollDriven) return;
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ en.target.classList.toggle("is-in",en.isIntersecting); });
+    },{threshold:0.16,rootMargin:"0px 0px -6% 0px"});
+    nodes.forEach(function(n){ io.observe(n); });
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init,{once:true});
+  else init();
 })();
 </script>
 
